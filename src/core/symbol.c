@@ -35,6 +35,7 @@
 #include "../pipeline.h"
 #include "../survey.h"
 #include "../bus.h"
+#include "../clntsrv.h"
 #include "../ws.h"
 
 #include <string.h>
@@ -93,6 +94,9 @@ static const struct nn_symbol_properties sym_value_names [] = {
     NN_SYM(NN_SURVEYOR, PROTOCOL, NONE, NONE),
     NN_SYM(NN_RESPONDENT, PROTOCOL, NONE, NONE),
     NN_SYM(NN_BUS, PROTOCOL, NONE, NONE),
+
+    NN_SYM(NN_CLIENT, PROTOCOL, NONE, NONE),
+    NN_SYM(NN_SERVER, PROTOCOL, NONE, NONE),
 
     NN_SYM(NN_SOCKADDR_MAX, LIMIT, NONE, NONE),
 

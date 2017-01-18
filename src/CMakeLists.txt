@@ -35,6 +35,7 @@ set (NN_SOURCES
     pipeline.h
     survey.h
     bus.h
+    clntsrv.h
 
     core/ep.h
     core/ep.c
@@ -130,6 +131,14 @@ set (NN_SOURCES
     protocols/bus/bus.c
     protocols/bus/xbus.h
     protocols/bus/xbus.c
+
+    protocols/clntsrv/client.c
+    protocols/clntsrv/server.h
+    protocols/clntsrv/server.c
+    protocols/clntsrv/xclient.h
+    protocols/clntsrv/xclient.c
+    protocols/clntsrv/xserver.h
+    protocols/clntsrv/xserver.c
 
     protocols/pipeline/push.c
     protocols/pipeline/pull.c

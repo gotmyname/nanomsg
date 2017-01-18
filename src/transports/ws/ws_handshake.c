@@ -59,6 +59,7 @@
 #include "../../survey.h"
 #include "../../pipeline.h"
 #include "../../bus.h"
+#include "../../clntsrv.h"
 
 static const struct nn_ws_sp_map NN_WS_HANDSHAKE_SP_MAP[] = {
     { NN_PAIR,       NN_PAIR,       "pair.sp.nanomsg.org" },
@@ -70,7 +71,9 @@ static const struct nn_ws_sp_map NN_WS_HANDSHAKE_SP_MAP[] = {
     { NN_RESPONDENT, NN_SURVEYOR,   "respondent.sp.nanomsg.org" },
     { NN_PUSH,       NN_PULL,       "push.sp.nanomsg.org" },
     { NN_PULL,       NN_PUSH,       "pull.sp.nanomsg.org" },
-    { NN_BUS,        NN_BUS,        "bus.sp.nanomsg.org" }
+    { NN_BUS,        NN_BUS,        "bus.sp.nanomsg.org" },
+    { NN_CLIENT,     NN_SERVER,     "client.sp.nanomsg.org" },
+    { NN_SERVER,     NN_CLIENT,     "server.sp.nanomsg.org" }
 };
 
 const size_t NN_WS_HANDSHAKE_SP_MAP_LEN = sizeof (NN_WS_HANDSHAKE_SP_MAP) /

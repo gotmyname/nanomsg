@@ -26,6 +26,11 @@
 
 cmake_minimum_required (VERSION 2.8.7)
 
+set(CMAKE_USER_MAKE_RULES_OVERRIDE
+   ${CMAKE_CURRENT_SOURCE_DIR}/c_flag_overrides.cmake)
+set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
+   ${CMAKE_CURRENT_SOURCE_DIR}/cxx_flag_overrides.cmake)
+
 project (nanomsg C)
 include (CheckFunctionExists)
 include (CheckSymbolExists)
@@ -439,6 +444,7 @@ install (FILES src/reqrep.h DESTINATION include/nanomsg)
 install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
+install (FILES src/clntsrv.h DESTINATION include/nanomsg)
 
 if (NN_ENABLE_NANOCAT)
     install (TARGETS nanocat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

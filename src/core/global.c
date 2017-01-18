@@ -99,6 +99,10 @@ extern struct nn_socktype nn_xrespondent_socktype;
 extern struct nn_socktype nn_xsurveyor_socktype;
 extern struct nn_socktype nn_bus_socktype;
 extern struct nn_socktype nn_xbus_socktype;
+extern struct nn_socktype nn_client_socktype;
+extern struct nn_socktype nn_server_socktype;
+extern struct nn_socktype nn_xclient_socktype;
+extern struct nn_socktype nn_xserver_socktype;
 
 /*  Array of known socket types. */
 const struct nn_socktype *nn_socktypes[] = {
@@ -122,6 +126,10 @@ const struct nn_socktype *nn_socktypes[] = {
     &nn_xsurveyor_socktype,
     &nn_bus_socktype,
     &nn_xbus_socktype,
+    &nn_client_socktype,
+    &nn_server_socktype,
+    &nn_xclient_socktype,
+    &nn_xserver_socktype,
     NULL,
 };
 
