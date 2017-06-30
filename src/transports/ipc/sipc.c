@@ -181,6 +181,12 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
 static int nn_sipc_close (struct nn_pipebase *self)
 {
+    struct nn_sipc *sipc;
+
+    sipc = nn_cont (self, struct nn_sipc, pipebase);
+
+    nn_usock_stop(sipc->usock);
+
     return 0;
 }
 
