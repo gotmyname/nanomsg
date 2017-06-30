@@ -27,6 +27,7 @@
 #include "../../protocol.h"
 
 #include "../../utils/hash.h"
+#include "../../utils/queue.h"
 
 #include "../utils/fq.h"
 
@@ -53,6 +54,12 @@ struct nn_xserver {
 
     /*  Fair-queuer to get messages from. */
     struct nn_fq inpipes;
+
+    /*  Queue of just closed pipes. */
+    struct nn_queue cpipes;
+
+    /*  Whether peername has been sent through message header. */
+    int peername_sent;
 };
 
 void nn_xserver_init (struct nn_xserver *self, const struct nn_sockbase_vfptr *vfptr,
@@ -67,6 +74,7 @@ int nn_xserver_events (struct nn_sockbase *self);
 int nn_xserver_send (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xserver_recv (struct nn_sockbase *self, struct nn_msg *msg);
 
+int nn_xserver_create (void *hint, struct nn_sockbase **sockbase);
 int nn_xserver_ispeer (int socktype);
 
 #endif

@@ -439,7 +439,10 @@ int nn_global_create_socket (int domain, int protocol)
 
     /*  Find the appropriate socket type. */
     for (i = 0; (socktype = nn_socktypes[i]) != NULL; i++) {
-        if (socktype->domain == domain && socktype->protocol == protocol) {
+        if (socktype->domain == domain &&
+            (socktype->protocol == protocol ||
+             (socktype->flags & NN_SOCKTYPE_FLAG_EMULATE &&
+              (socktype->flags >> 8) == protocol))) {
 
             /*  Instantiate the socket. */
             if ((sock = nn_alloc (sizeof (struct nn_sock), "sock")) == NULL)

@@ -143,6 +143,13 @@ struct nn_pipebase_vfptr {
     /*  Receive a message from the network. The function can return either error
         (negative number) or any combination of the flags defined above. */
     int (*recv) (struct nn_pipebase *self, struct nn_msg *msg);
+
+    /*  Close the pipe. The function can return error (negative number). */
+    int (*close) (struct nn_pipebase *self);
+
+    /*  Get the peername of pipe. The function can return error
+        (negative number). */
+    int (*getpeername) (struct nn_pipebase *self, void *buf, size_t len);
 };
 
 /*  Endpoint specific options. Same restrictions as for nn_pipebase apply  */

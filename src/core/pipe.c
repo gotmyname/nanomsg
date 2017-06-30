@@ -222,3 +222,25 @@ void nn_pipe_getopt (struct nn_pipe *self, int level, int option,
     pipebase = (struct nn_pipebase*) self;
     nn_pipebase_getopt (pipebase, level, option, optval, optvallen);
 }
+
+int nn_pipe_close (struct nn_pipe *self)
+{
+    int rc;
+    struct nn_pipebase *pipebase;
+
+    pipebase = (struct nn_pipebase*) self;
+    rc = pipebase->vfptr->close (pipebase);
+    errnum_assert (rc >= 0, -rc);
+    return rc;
+}
+
+int nn_pipe_getpeername (struct nn_pipe *self, void *buf, size_t len)
+{
+    int rc;
+    struct nn_pipebase *pipebase;
+
+    pipebase = (struct nn_pipebase*) self;
+    rc = pipebase->vfptr->getpeername (pipebase, buf, len);
+    errnum_assert (rc >= 0, -rc);
+    return rc;
+}

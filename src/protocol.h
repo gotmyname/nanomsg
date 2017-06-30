@@ -74,6 +74,11 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 void nn_pipe_getopt (struct nn_pipe *self, int level, int option,
     void *optval, size_t *optvallen);
 
+/*  Close the pipe. */
+int nn_pipe_close (struct nn_pipe *self);
+
+/*  Get the peername of pipe. */
+int nn_pipe_getpeername (struct nn_pipe *self, void *buf, size_t len);
 
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
@@ -166,6 +171,9 @@ void nn_sockbase_stat_increment (struct nn_sockbase *self, int name,
 
 /*  Specifies that the socket type can be never used to send messages. */
 #define NN_SOCKTYPE_FLAG_NOSEND 2
+
+/*  Specifies that the socket type will emulate other protocol. */
+#define NN_SOCKTYPE_FLAG_EMULATE 128
 
 struct nn_socktype {
 

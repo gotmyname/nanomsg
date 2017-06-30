@@ -57,9 +57,13 @@ static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
 
 static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_sinproc_close (struct nn_pipebase *self);
+static int nn_sinproc_getpeername (struct nn_pipebase *self, void *buf, size_t len);
 const struct nn_pipebase_vfptr nn_sinproc_pipebase_vfptr = {
     nn_sinproc_send,
-    nn_sinproc_recv
+    nn_sinproc_recv,
+    nn_sinproc_close,
+    nn_sinproc_getpeername
 };
 
 void nn_sinproc_init (struct nn_sinproc *self, int src,
@@ -210,6 +214,17 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     if (!nn_msgqueue_empty (&sinproc->msgqueue))
        nn_pipebase_received (&sinproc->pipebase);
 
+    return 0;
+}
+
+static int nn_sinproc_close (struct nn_pipebase *self)
+{
+    return 0;
+}
+
+static int nn_sinproc_getpeername (struct nn_pipebase *self, void *buf, size_t len)
+{
+    memcpy(buf, "inproc", 7);
     return 0;
 }
 

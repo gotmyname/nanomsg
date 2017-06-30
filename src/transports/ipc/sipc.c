@@ -58,9 +58,13 @@
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_sipc_close (struct nn_pipebase *self);
+static int nn_sipc_getpeername (struct nn_pipebase *self, void *buf, size_t len);
 const struct nn_pipebase_vfptr nn_sipc_pipebase_vfptr = {
     nn_sipc_send,
-    nn_sipc_recv
+    nn_sipc_recv,
+    nn_sipc_close,
+    nn_sipc_getpeername
 };
 
 /*  Private functions. */
@@ -172,6 +176,17 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     sipc->instate = NN_SIPC_INSTATE_HDR;
     nn_usock_recv (sipc->usock, sipc->inhdr, sizeof (sipc->inhdr), NULL);
 
+    return 0;
+}
+
+static int nn_sipc_close (struct nn_pipebase *self)
+{
+    return 0;
+}
+
+static int nn_sipc_getpeername (struct nn_pipebase *self, void *buf, size_t len)
+{
+    memcpy(buf, "ipc", 4);
     return 0;
 }
 

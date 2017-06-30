@@ -500,6 +500,33 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     wsa_assert (0);
 }
 
+int nn_usock_getpeername (struct nn_usock *self, void *buf, size_t len)
+{
+    int rc;
+    struct sockaddr_in peeraddr;
+    socklen_t addr_len;
+    char peerip[18];
+
+    if (self->state != NN_USOCK_STATE_ACTIVE) {
+        return -ENOTCONN;
+    }
+
+    if (self->domain == AF_UNIX) {
+        memcpy(buf, "ipc", 4);
+        return 0;
+    }
+
+    rc = getpeername(self->s, (struct sockaddr*)&peeraddr, &addr_len);
+    if (nn_slow (rc < 0)) {
+        return -ENOTCONN;
+    }
+
+    snprintf (buf, len, "%s:%d", 
+        inet_ntop(AF_INET, &peeraddr.sin_addr, peerip, sizeof(peerip)),
+        ntohs(peeraddr.sin_port));
+    return 0;
+}
+
 static void nn_usock_create_io_completion (struct nn_usock *self)
 {
     struct nn_worker *worker;

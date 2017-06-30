@@ -25,6 +25,7 @@
 #include "xclient.h"
 
 #include "../../nn.h"
+#include "../../pair.h"
 #include "../../clntsrv.h"
 
 #include "../utils/excl.h"
@@ -156,7 +157,7 @@ int nn_xclient_create (void *hint, struct nn_sockbase **sockbase)
 
 int nn_xclient_ispeer (int socktype)
 {
-    return socktype == NN_SERVER ? 1 : 0;
+    return (socktype == NN_SERVER || socktype == NN_PAIR) ? 1 : 0;
 }
 
 struct nn_socktype nn_xclient_socktype = {

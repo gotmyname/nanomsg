@@ -162,6 +162,8 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     type |= SOCK_CLOEXEC;
 #endif
 
+    self->domain = domain;
+
     /* Open the underlying socket. */
     s = socket (domain, type, protocol);
     if (nn_slow (s < 0))
@@ -493,6 +495,33 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
 
     /*  Ask the worker thread to receive the remaining data. */
     nn_worker_execute (self->worker, &self->task_recv);
+}
+
+int nn_usock_getpeername (struct nn_usock *self, void *buf, size_t len)
+{
+    int rc;
+    struct sockaddr_in peeraddr;
+    socklen_t addr_len;
+    char peerip[18];
+
+    if (self->state != NN_USOCK_STATE_ACTIVE) {
+        return -ENOTCONN;
+    }
+
+    if (self->domain == AF_UNIX) {
+        memcpy(buf, "ipc", 4);
+        return 0;
+    }
+
+    rc = getpeername(self->s, (struct sockaddr*)&peeraddr, &addr_len);
+    if (nn_slow (rc < 0)) {
+        return -ENOTCONN;
+    }
+
+    snprintf (buf, len, "%s:%d", 
+        inet_ntop(AF_INET, &peeraddr.sin_addr, peerip, sizeof(peerip)),
+        ntohs(peeraddr.sin_port));
+    return 0;
 }
 
 static int nn_internal_tasks (struct nn_usock *usock, int src, int type)

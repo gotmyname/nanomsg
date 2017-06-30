@@ -25,6 +25,7 @@
 #include "xserver.h"
 
 #include "../../nn.h"
+#include "../../pair.h"
 #include "../../clntsrv.h"
 
 #include "../../utils/err.h"
@@ -36,6 +37,11 @@
 #include "../../utils/attr.h"
 
 #include <string.h>
+
+struct nn_closed_pipe {
+    uint32_t key;
+    struct nn_queue_item item;
+};
 
 /*  Private functions. */
 static void nn_xserver_destroy (struct nn_sockbase *self);
@@ -65,10 +71,20 @@ void nn_xserver_init (struct nn_xserver *self, const struct nn_sockbase_vfptr *v
 
     nn_hash_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
+    nn_queue_init(&self->cpipes);
+
+    self->peername_sent = 0;
 }
 
 void nn_xserver_term (struct nn_xserver *self)
 {
+    struct nn_queue_item *item;
+    struct nn_closed_pipe *cpipe;
+
+    while ((item = nn_queue_pop (&self->cpipes))) {
+        cpipe = nn_cont (item, struct nn_closed_pipe, item);
+        nn_free (cpipe);
+    }
     nn_fq_term (&self->inpipes);
     nn_hash_term (&self->outpipes);
     nn_sockbase_term (&self->sockbase);
@@ -116,6 +132,7 @@ void nn_xserver_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xserver *xserver;
     struct nn_xserver_data *data;
+    struct nn_closed_pipe *cpipe;
 
     xserver = nn_cont (self, struct nn_xserver, sockbase);
     data = nn_pipe_getdata (pipe);
@@ -123,6 +140,11 @@ void nn_xserver_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_fq_rm (&xserver->inpipes, &data->initem);
     nn_hash_erase (&xserver->outpipes, &data->outitem);
     nn_hash_item_term (&data->outitem);
+
+    cpipe = nn_alloc (sizeof (struct nn_closed_pipe), "closed pipe (xserver)");
+    cpipe->key = data->outitem.key;
+    nn_queue_item_init(&cpipe->item);
+    nn_queue_push(&xserver->cpipes, &cpipe->item);
 
     nn_free (data);
 }
@@ -175,7 +197,16 @@ int nn_xserver_send (struct nn_sockbase *self, struct nn_msg *msg)
         or if it's not ready for sending, silently drop the message. */
     data = nn_cont (nn_hash_get (&xserver->outpipes, key), struct nn_xserver_data,
         outitem);
-    if (!data || !(data->flags & NN_XSERVER_OUT)) {
+    if (!data) {
+        nn_msg_term (msg);
+        return -ENOTCONN;
+    }
+    if (!nn_chunkref_size (&msg->body)) {
+        rc = nn_pipe_close (data->pipe);
+        errnum_assert (rc >= 0, -rc);
+        return 0;
+    }
+    if (!(data->flags & NN_XSERVER_OUT)) {
         nn_msg_term (msg);
         return 0;
     }
@@ -194,65 +225,42 @@ int nn_xserver_recv (struct nn_sockbase *self, struct nn_msg *msg)
     int rc;
     struct nn_xserver *xserver;
     struct nn_pipe *pipe;
-    int i;
-    int maxttl;
-    void *data;
-    size_t sz;
     struct nn_chunkref ref;
     struct nn_xserver_data *pipedata;
+    struct nn_queue_item *item;
+    struct nn_closed_pipe *cpipe;
+    size_t off;
 
     xserver = nn_cont (self, struct nn_xserver, sockbase);
+
+    if ((item = nn_queue_pop (&xserver->cpipes))) {
+        cpipe = nn_cont (item, struct nn_closed_pipe, item);
+        nn_msg_init (msg, 0);
+        nn_chunkref_init (&msg->sphdr, sizeof (uint32_t));
+        nn_putl (nn_chunkref_data (&msg->sphdr), cpipe->key);
+        nn_free (cpipe);
+        return 0;
+    }
 
     rc = nn_fq_recv (&xserver->inpipes, msg, &pipe);
     if (nn_slow (rc < 0))
         return rc;
 
-    if (!(rc & NN_PIPE_PARSED)) {
-
-        sz = sizeof (maxttl);
-        rc = nn_sockbase_getopt (self, NN_MAXTTL, &maxttl, &sz);
-        errnum_assert (rc == 0, -rc);
-
-        /*  Determine the size of the message header. */
-        data = nn_chunkref_data (&msg->body);
-        sz = nn_chunkref_size (&msg->body);
-        i = 0;
-        while (1) {
-
-            /*  Ignore the malformed requests without the bottom of the stack. */
-            if (nn_slow ((i + 1) * sizeof (uint32_t) > sz)) {
-                nn_msg_term (msg);
-                return -EAGAIN;
-            }
-
-            /*  If the bottom of the backtrace stack is reached, proceed. */
-            if (nn_getl ((uint8_t*)(((uint32_t*) data) + i)) & 0x80000000)
-                break;
-
-            ++i;
-        }
-        ++i;
-
-        /* If we encountered too many hops, just toss the message */
-        if (i > maxttl) {
-            nn_msg_term (msg);
-            return -EAGAIN;
-        }
-
-        /*  Split the header and the body. */
-        nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
-        nn_chunkref_term (&msg->sphdr);
-        nn_chunkref_init (&msg->sphdr, i * sizeof (uint32_t));
-        memcpy (nn_chunkref_data (&msg->sphdr), data, i * sizeof (uint32_t));
-        nn_chunkref_trim (&msg->body, i * sizeof (uint32_t));
-    }
-
     /*  Prepend the header by the pipe key. */
     pipedata = nn_pipe_getdata (pipe);
     nn_chunkref_init (&ref,
-        nn_chunkref_size (&msg->sphdr) + sizeof (uint32_t));
+        nn_chunkref_size (&msg->sphdr) +
+        (xserver->peername_sent ? sizeof (uint32_t) : NN_CHUNKREF_MAX));
     nn_putl (nn_chunkref_data (&ref), pipedata->outitem.key);
-    memcpy (((uint8_t*) nn_chunkref_data (&ref)) + sizeof (uint32_t),
+    off = sizeof (uint32_t);
+    if (!xserver->peername_sent) {
+        nn_pipe_getpeername (pipe, 
+            (char *) nn_chunkref_data (&ref) + sizeof (uint32_t),
+            NN_CHUNKREF_MAX - sizeof (uint32_t));
+        xserver->peername_sent = 1;
+        off = NN_CHUNKREF_MAX;
+    }
+    memcpy (((uint8_t*) nn_chunkref_data (&ref)) + off,
         nn_chunkref_data (&msg->sphdr), nn_chunkref_size (&msg->sphdr));
     nn_chunkref_term (&msg->sphdr);
     nn_chunkref_mv (&msg->sphdr, &ref);
@@ -260,7 +268,7 @@ int nn_xserver_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-static int nn_xserver_create (void *hint, struct nn_sockbase **sockbase)
+int nn_xserver_create (void *hint, struct nn_sockbase **sockbase)
 {
     struct nn_xserver *self;
 
@@ -274,7 +282,7 @@ static int nn_xserver_create (void *hint, struct nn_sockbase **sockbase)
 
 int nn_xserver_ispeer (int socktype)
 {
-    return socktype == NN_CLIENT ? 1 : 0;
+    return (socktype == NN_CLIENT || socktype == NN_PAIR) ? 1 : 0;
 }
 
 struct nn_socktype nn_xserver_socktype = {

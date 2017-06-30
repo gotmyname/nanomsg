@@ -133,7 +133,6 @@ set (NN_SOURCES
     protocols/bus/xbus.c
 
     protocols/clntsrv/client.c
-    protocols/clntsrv/server.h
     protocols/clntsrv/server.c
     protocols/clntsrv/xclient.h
     protocols/clntsrv/xclient.c

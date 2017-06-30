@@ -102,9 +102,13 @@
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_sws_close (struct nn_pipebase *self);
+static int nn_sws_getpeername (struct nn_pipebase *self, void *buf, size_t len);
 const struct nn_pipebase_vfptr nn_sws_pipebase_vfptr = {
     nn_sws_send,
-    nn_sws_recv
+    nn_sws_recv,
+    nn_sws_close,
+    nn_sws_getpeername
 };
 
 /*  Private functions. */
@@ -576,6 +580,31 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     memcpy (NN_CMSG_DATA (cmsg), &opcode_hdr, sizeof (opcode_hdr));
 
     return 0;
+}
+
+static int nn_sws_close (struct nn_pipebase *self)
+{
+    struct nn_sws *sws;
+
+    sws = nn_cont (self, struct nn_sws, pipebase);
+
+    nn_usock_stop (sws->usock);
+
+    return 0;
+}
+
+static int nn_sws_getpeername (struct nn_pipebase *self, void *buf, size_t len)
+{
+    int rc;
+
+    struct nn_sws *sws;
+
+    sws = nn_cont (self, struct nn_sws, pipebase);
+
+    memcpy(buf, "ws://", 5);
+    rc = nn_usock_getpeername (sws->usock, (char *)buf + 5, len);
+
+    return rc;
 }
 
 static void nn_sws_validate_utf8_chunk (struct nn_sws *self)

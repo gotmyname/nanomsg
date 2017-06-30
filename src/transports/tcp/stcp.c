@@ -54,9 +54,13 @@
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_stcp_close (struct nn_pipebase *self);
+static int nn_stcp_getpeername (struct nn_pipebase *self, void *buf, size_t len);
 const struct nn_pipebase_vfptr nn_stcp_pipebase_vfptr = {
     nn_stcp_send,
-    nn_stcp_recv
+    nn_stcp_recv,
+    nn_stcp_close,
+    nn_stcp_getpeername
 };
 
 /*  Private functions. */
@@ -168,6 +172,31 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
     nn_usock_recv (stcp->usock, stcp->inhdr, sizeof (stcp->inhdr), NULL);
 
     return 0;
+}
+
+static int nn_stcp_close (struct nn_pipebase *self)
+{
+    struct nn_stcp *stcp;
+
+    stcp = nn_cont (self, struct nn_stcp, pipebase);
+
+    nn_usock_stop(stcp->usock);
+
+    return 0;
+}
+
+static int nn_stcp_getpeername (struct nn_pipebase *self, void *buf, size_t len)
+{
+    int rc;
+
+    struct nn_stcp *stcp;
+
+    stcp = nn_cont (self, struct nn_stcp, pipebase);
+
+    memcpy(buf, "tcp://", 6);
+    rc = nn_usock_getpeername (stcp->usock, (char *)buf + 6, len);
+
+    return rc;
 }
 
 static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,

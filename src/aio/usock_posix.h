@@ -33,6 +33,8 @@ struct nn_usock {
     struct nn_fsm fsm;
     int state;
 
+    int domain;
+    
     /*  The worker thread the usock is associated with. */
     struct nn_worker *worker;
 
