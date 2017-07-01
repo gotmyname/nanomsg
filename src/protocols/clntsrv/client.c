@@ -25,12 +25,13 @@
 #include "xclient.h"
 
 #include "../../nn.h"
+#include "../../pair.h"
 #include "../../clntsrv.h"
 
 struct nn_socktype nn_client_socktype = {
     AF_SP,
-    NN_CLIENT,
-    0,
+    NN_PAIR,
+    NN_SOCKTYPE_FLAG_EMULATE | (NN_CLIENT << 8),
     nn_xclient_create,
     nn_xclient_ispeer,
 };

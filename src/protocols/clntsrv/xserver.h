@@ -40,6 +40,9 @@ struct nn_xserver_data {
     struct nn_hash_item outitem;
     struct nn_fq_data initem;
     uint32_t flags;
+
+    /*  Whether peername has been sent through message header. */
+    int peername_sent;
 };
 
 struct nn_xserver {
@@ -57,9 +60,6 @@ struct nn_xserver {
 
     /*  Queue of just closed pipes. */
     struct nn_queue cpipes;
-
-    /*  Whether peername has been sent through message header. */
-    int peername_sent;
 };
 
 void nn_xserver_init (struct nn_xserver *self, const struct nn_sockbase_vfptr *vfptr,

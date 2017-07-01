@@ -72,8 +72,6 @@ void nn_xserver_init (struct nn_xserver *self, const struct nn_sockbase_vfptr *v
     nn_hash_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
     nn_queue_init(&self->cpipes);
-
-    self->peername_sent = 0;
 }
 
 void nn_xserver_term (struct nn_xserver *self)
@@ -123,6 +121,7 @@ int nn_xserver_add (struct nn_sockbase *self, struct nn_pipe *pipe)
         &data->outitem);
     ++xserver->next_key;
     nn_fq_add (&xserver->inpipes, &data->initem, pipe, rcvprio);
+    data->peername_sent = 0;
     nn_pipe_setdata (pipe, data);
 
     return 0;
@@ -250,14 +249,14 @@ int nn_xserver_recv (struct nn_sockbase *self, struct nn_msg *msg)
     pipedata = nn_pipe_getdata (pipe);
     nn_chunkref_init (&ref,
         nn_chunkref_size (&msg->sphdr) +
-        (xserver->peername_sent ? sizeof (uint32_t) : NN_CHUNKREF_MAX));
+        (pipedata->peername_sent ? sizeof (uint32_t) : NN_CHUNKREF_MAX));
     nn_putl (nn_chunkref_data (&ref), pipedata->outitem.key);
     off = sizeof (uint32_t);
-    if (!xserver->peername_sent) {
+    if (!pipedata->peername_sent) {
         nn_pipe_getpeername (pipe, 
             (char *) nn_chunkref_data (&ref) + sizeof (uint32_t),
             NN_CHUNKREF_MAX - sizeof (uint32_t));
-        xserver->peername_sent = 1;
+        pipedata->peername_sent = 1;
         off = NN_CHUNKREF_MAX;
     }
     memcpy (((uint8_t*) nn_chunkref_data (&ref)) + off,
