@@ -30,7 +30,14 @@
   #define NN_CHUNKREF_MAX 32
 #endif
 
-#define SOCKET_ADDRESS "inproc://test"
+//#define SOCKET_ADDRESS "inproc://test"
+//#define EXPECTED_PEERNAME "inproc"
+
+//#define SOCKET_ADDRESS "ipc://test"
+//#define EXPECTED_PEERNAME "ipc"
+
+#define SOCKET_ADDRESS "tcp://127.0.0.1:3344"
+#define EXPECTED_PEERNAME "tcp://127.0.0.1"
 
 static void test_sendmsg_impl (char *file, int line, int sock, char *data,
                                uint32_t key);
@@ -88,6 +95,15 @@ static void NN_UNUSED test_sendmsg_impl (char *file, int line,
             file, line);
         nn_err_abort ();
     }
+}
+
+static int NN_UNUSED peername_eq (char *peername, char *expected)
+{
+    int len = strlen(expected) + 1;
+    if (!memcmp (expected, "tcp", 3)) {
+        len--;
+    }
+    return memcmp(peername, expected, len) == 0;
 }
 
 static void NN_UNUSED test_recvmsg_impl (char *file, int line,
@@ -158,7 +174,7 @@ static void NN_UNUSED test_recvmsg_impl (char *file, int line,
     ptr += sizeof (size_t);
     
     memcpy(key, ptr, sizeof(*key));
-    if (peername && strcmp(peername, ptr + sizeof(*key))) {
+    if (peername && !peername_eq (ptr + sizeof(*key), peername)) {
         fprintf (stderr, "Received peername is wrong (%s:%d)\n", 
             file, line);
         nn_err_abort ();
@@ -186,12 +202,12 @@ int main ()
 
     /*  Check fair queueing the requests. */
     test_send (clnt2, "ABC2");
-    test_recvmsg1 (srv1, "ABC2", &key2, "inproc");
+    test_recvmsg1 (srv1, "ABC2", &key2, EXPECTED_PEERNAME);
     test_sendmsg (srv1, "ABC2", key2);
     test_recv (clnt2, "ABC2");
 
     test_send (clnt1, "ABC1");
-    test_recvmsg1 (srv1, "ABC1", &key1, "inproc");
+    test_recvmsg1 (srv1, "ABC1", &key1, EXPECTED_PEERNAME);
     test_sendmsg (srv1, "ABC1", key1);
     test_recv (clnt1, "ABC1");
 
@@ -217,7 +233,7 @@ int main ()
     test_connect (clnt1, SOCKET_ADDRESS);
 
     test_send (clnt1, "ABC");
-    test_recvmsg1 (srv1, "ABC", &key1, "inproc");
+    test_recvmsg1 (srv1, "ABC", &key1, EXPECTED_PEERNAME);
     test_sendmsg (srv1, "ABC", key1);
     test_recv (clnt1, "ABC");
 
@@ -234,7 +250,7 @@ int main ()
     test_send (clnt1, "DEF");
 
     timeo = 100;
-    test_recvmsg1 (srv1, "ABC", &key1, "inproc");
+    test_recvmsg1 (srv1, "ABC", &key1, EXPECTED_PEERNAME);
     test_recvmsg (srv1, "DEF", &key2);
     if (key1 != key2) {
         fprintf (stderr, "Received keys unmatch: %u != %u (%s:%d)\n",
