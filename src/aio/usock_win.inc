@@ -516,8 +516,10 @@ int nn_usock_getpeername (struct nn_usock *self, void *buf, size_t len)
         return 0;
     }
 
+    addr_len = sizeof(peeraddr);
     rc = getpeername(self->s, (struct sockaddr*)&peeraddr, &addr_len);
     if (nn_slow (rc < 0)) {
+        printf("Unable to getpeername: %i\n", WSAGetLastError());
         return -ENOTCONN;
     }
 
@@ -1007,6 +1009,9 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
         case NN_USOCK_SRC_IN:
             switch (type) {
             case NN_WORKER_OP_DONE:
+
+                setsockopt(usock->asock->s, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
+                    (char *)&usock->s, sizeof(usock->s));
 
                 /*  Adjust the new usock object. */
                 usock->asock->state = NN_USOCK_STATE_ACCEPTED;

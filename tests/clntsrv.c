@@ -30,14 +30,17 @@
   #define NN_CHUNKREF_MAX 32
 #endif
 
-//#define SOCKET_ADDRESS "inproc://test"
-//#define EXPECTED_PEERNAME "inproc"
+#define SOCKET_ADDRESS "inproc://test"
+#define EXPECTED_PEERNAME "inproc"
 
 //#define SOCKET_ADDRESS "ipc://test"
 //#define EXPECTED_PEERNAME "ipc"
 
-#define SOCKET_ADDRESS "tcp://127.0.0.1:3344"
-#define EXPECTED_PEERNAME "tcp://127.0.0.1"
+//#define SOCKET_ADDRESS "tcp://127.0.0.1:3344"
+//#define EXPECTED_PEERNAME "tcp://127.0.0.1"
+
+//#define SOCKET_ADDRESS "ws://127.0.0.1:3344"
+//#define EXPECTED_PEERNAME "ws://127.0.0.1"
 
 static void test_sendmsg_impl (char *file, int line, int sock, char *data,
                                uint32_t key);
@@ -100,7 +103,7 @@ static void NN_UNUSED test_sendmsg_impl (char *file, int line,
 static int NN_UNUSED peername_eq (char *peername, char *expected)
 {
     int len = strlen(expected) + 1;
-    if (!memcmp (expected, "tcp", 3)) {
+    if (!memcmp (expected, "tcp", 3) || !memcmp (expected, "ws", 2)) {
         len--;
     }
     return memcmp(peername, expected, len) == 0;
