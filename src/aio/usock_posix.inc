@@ -33,6 +33,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/uio.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2

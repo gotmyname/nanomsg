@@ -158,7 +158,7 @@ static void NN_UNUSED test_recvmsg_impl (char *file, int line,
     }
     if (chdr->cmsg_len != sptotalsz) {
         fprintf (stderr, "Received cmsghdr len is wrong %d != %d (%s:%d)\n",
-            chdr->cmsg_len, sptotalsz, file, line);
+            (int)chdr->cmsg_len, (int)sptotalsz, file, line);
         nn_err_abort ();
     }
     if (chdr->cmsg_level != PROTO_SP || chdr->cmsg_type != SP_HDR) {
@@ -168,7 +168,7 @@ static void NN_UNUSED test_recvmsg_impl (char *file, int line,
     ptr += sizeof (*chdr);
     if (*(size_t *)(void *)ptr != spsz) {
         fprintf (stderr, "Received cmsghdr data len is wrong %d != %d (%s:%d)\n",
-            *(size_t *)(void *)ptr, spsz, file, line);
+            (int)*(size_t *)(void *)ptr, (int)spsz, file, line);
         nn_err_abort ();
     }
     ptr += sizeof (size_t);
